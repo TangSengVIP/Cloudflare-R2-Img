@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloudflare 图床</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:760px;margin:0 auto;background:#0b0f14;color:#e6edf3}
+    h1{font-size:22px;margin:0 0 16px}
+    .card{background:#0f1720;border:1px solid #1f2a37;border-radius:12px;padding:16px}
+    .row{display:flex;gap:12px;align-items:center}
+    input[type=text]{flex:1;padding:8px;background:#0b121a;border:1px solid #1f2a37;border-radius:8px;color:#e6edf3}
+    button{padding:10px 14px;border:none;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer}
+    .result{margin-top:16px}
+    .url{display:flex;gap:8px;align-items:center}
+    .url input{flex:1;padding:8px;border:1px solid #1f2a37;border-radius:8px;background:#0b121a;color:#e6edf3}
+    img{max-width:100%;border-radius:8px;margin-top:12px}
+    .status{margin-left:8px;font-size:14px;color:#9ba3af}
+  </style>
+  <script>
+    function preview() {
+      const keyInput = document.getElementById('key');
+      const url = '/api/image/' + (keyInput.value || '').trim();
+      const urlInput = document.getElementById('url');
+      const img = document.getElementById('img');
+      urlInput.value = url;
+      img.src = url;
+    }
+    async function copyUrl() {
+      const v = document.getElementById('url').value;
+      if (!v) return;
+      await navigator.clipboard.writeText(v);
+      const status = document.getElementById('status');
+      status.textContent = '已复制链接';
+    }
+  </script>
+  </head>
+<body>
+  <h1>Cloudflare 图床</h1>
+  <div class="card">
+    <div class="row">
+      <input id="key" type="text" placeholder="输入 R2 对象键，如 123.png" oninput="preview()">
+      <span id="status" class="status"></span>
+    </div>
+    <div class="result">
+      <div class="url">
+        <input id="url" placeholder="图片链接" readonly>
+        <button onclick="copyUrl()">复制</button>
+      </div>
+      <img id="img" alt="预览">
+    </div>
+  </div>
+</body>
+</html>
