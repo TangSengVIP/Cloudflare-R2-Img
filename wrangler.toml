@@ -1,0 +1,6 @@
+name = "cloudflare-img"
+compatibility_date = "2024-08-01"
+
+[[r2_buckets]]
+binding = "img"
+bucket_name = "img"

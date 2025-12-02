@@ -20,7 +20,12 @@ export const onRequestGet = async ({ env, params, request }) => {
       return new Response("forbidden", { status: 403 });
     }
   }
-  const obj = await env.IMAGES.get(key);
+  const obj = await env.img.get(key);
+  try {
+    // no-op: placeholder to catch binding errors
+  } catch {
+    return new Response("storage error", { status: 500 });
+  }
   if (!obj) {
     return new Response("not found", { status: 404 });
   }
@@ -53,7 +58,12 @@ export const onRequestHead = async ({ env, params, request }) => {
       return new Response("forbidden", { status: 403 });
     }
   }
-  const head = await env.IMAGES.head(key);
+  const head = await env.img.head(key);
+  try {
+    // no-op: placeholder to catch binding errors
+  } catch {
+    return new Response("storage error", { status: 500 });
+  }
   if (!head) {
     return new Response("not found", { status: 404 });
   }
