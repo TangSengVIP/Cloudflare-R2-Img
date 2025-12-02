@@ -39,17 +39,12 @@ export const onRequestHead = async ({ env, params, request }) => {
   const allowed = (env.ALLOWED_REFERRERS || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
   if (allowed.length) {
     const ref = request.headers.get("referer") || "";
-    let pass = false;
-    const reqHost = (() => { try { return new URL(request.url).hostname.toLowerCase(); } catch { return ""; } })();
-    if (ref) {
-      try {
-        const host = new URL(ref).hostname.toLowerCase();
-        pass = host === reqHost || allowed.some(a => host === a || (a.startsWith("*.") && host.endsWith(a.slice(2))));
-      } catch {}
-    } else {
-      pass = true;
-    }
-    if (!pass) {
+    if (!ref) return new Response("forbidden", { status: 403 });
+    try {
+      const host = new URL(ref).hostname.toLowerCase();
+      const ok = allowed.some(a => host === a || (a.startsWith("*.") && host.endsWith(a.slice(2))));
+      if (!ok) return new Response("forbidden", { status: 403 });
+    } catch {
       return new Response("forbidden", { status: 403 });
     }
   }
