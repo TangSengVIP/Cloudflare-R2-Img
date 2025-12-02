@@ -13,9 +13,9 @@
 - `functions/api/image/[key].ts`：图片读取端点（`GET` 与 `HEAD`）
 
 ## 前端使用
-- 打开站点首页（如 `https://img.viewnet.cc/` 或 `https://cloudflare-r2-img.pages.dev/`）
+- 打开站点首页（你的 Pages 自定义域或系统域，例如 `<your-pages-domain>`）
 - 在输入框填写对象键（例如 `logo.png`）
-- 若存在则显示预览与完整链接（`https://<域名>/api/image/<key>`）；不存在则提示“文件名错误”
+- 若存在则显示预览与完整链接（`https://<your-domain>/api/image/<key>`）；不存在则提示“文件名错误”
 
 ## API
 - `GET /api/image/:key`
@@ -34,12 +34,12 @@
 2) 环境变量（防盗链白名单）
 - Pages → Settings → Environment variables
 - `ALLOWED_REFERRERS`
-  - 示例值：`titslee.net, *.titslee.net, viewnet.cc, *.viewnet.cc, img.viewnet.cc, cloudflare-r2-img.pages.dev`
+  - 示例值：`<your-domain>, *.example.com, <your-pages-domain>`
   - 说明：允许同源与无 Referer 的直接访问；其余来源必须在白名单内
 
 3) 自定义域名（可选）
-- Pages 项目 → Custom domains → 绑定 `img.viewnet.cc`
-- 配置完成后，前端复制的链接将使用完整 `https://img.viewnet.cc/api/image/<key>`
+- Pages 项目 → Custom domains → 绑定你的自定义域名（例如 `<your-domain>`）
+- 配置完成后，前端复制的链接将使用完整 `https://<your-domain>/api/image/<key>`
 
 ## 本地开发（可选）
 - 安装 Wrangler：`npm i -g wrangler`
@@ -63,4 +63,3 @@
 - 直接访问返回 403：检查 `ALLOWED_REFERRERS` 是否包含你的域名，或是否需要允许无 Referer 访问
 - 预览失败或“文件名错误”：确认对象键存在、R2 绑定为 `IMAGES=img`、白名单设置正确
 - 内容类型不对：上传到 R2 时设置对象的 `content-type` 元数据
-
