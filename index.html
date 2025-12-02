@@ -5,64 +5,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>图片中心</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;min-height:100vh;margin:0;background:#0b0f14;color:#e6edf3;display:flex;align-items:center;justify-content:center;padding:24px}
-    h1{font-size:32px;margin:0 0 20px;text-align:center;letter-spacing:.02em}
-    .card{width:100%;max-width:720px;background:#0f1720;border:1px solid #1b2430;border-radius:16px;padding:28px 24px;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center}
-    .row{width:100%;display:block}
-    input[type=text]{width:100%;padding:14px 16px;background:#0b121a;border:1px solid #1f2a37;border-radius:10px;color:#e6edf3;font-size:18px}
-    input[type=text]:focus{outline:2px solid #2563eb33;border-color:#2a3a4a}
-    .result{margin-top:18px;text-align:center}
+    :root{--bg1:#0b0f14;--bg2:#0f1720;--border:#1b2430;--text:#e6edf3;--muted:#9ba3af;--brand:#2563eb;--brand2:#60a5fa}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;min-height:100vh;margin:0;background:linear-gradient(180deg,rgba(14,19,26,.9),rgba(11,15,20,.95)),radial-gradient(1200px 600px at 50% -200px,rgba(37,99,235,.10),transparent);color:var(--text);display:flex;align-items:flex-start;justify-content:center;padding:12vh 24px 24px}
+    .card{position:relative;z-index:1;width:100%;max-width:720px;background:rgba(15,23,32,.7);backdrop-filter:saturate(1.2) blur(6px);border:1px solid var(--border);border-radius:18px;padding:26px 22px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;overflow:hidden}
+    .row{width:100%;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding:0 16px;overflow:hidden;position:relative}
+    input[type=text]{width:100%;padding:16px 18px;background:#0b121a;border:1px solid #1f2a37;border-radius:12px;color:var(--text);font-size:18px;transition:border-color .2s;box-sizing:border-box}
+    input[type=text]::placeholder{color:#758195}
+    input[type=text]:focus{outline:none;border-color:#2a3a4a}
+    .status{display:block;font-size:14px;color:var(--muted);text-align:center;min-height:22px}
+    .result{margin-top:18px;text-align:center;width:100%}
     .imgwrap{display:flex;justify-content:center}
-    img{max-width:100%;border-radius:12px;margin-top:12px;border:1px solid #1f2a37;cursor:pointer}
-    .hint{margin-top:8px;font-size:13px;color:#9ba3af}
-    .status{display:block;margin-top:8px;font-size:14px;color:#9ba3af;text-align:center;min-height:20px}
+    img{max-width:100%;border-radius:14px;margin-top:12px;border:1px solid var(--border);box-shadow:0 12px 28px rgba(0,0,0,.35);cursor:pointer}
+    .hint{margin-top:8px;font-size:13px;color:var(--muted)}
+    .loader{width:100%;height:180px;border-radius:14px;margin-top:12px;background:linear-gradient(90deg,#0b121a 0%,#0d141c 50%,#0b121a 100%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{0%{background-position:0 0}100%{background-position:200% 0}}
+    
+    .ripples{position:fixed;inset:0;pointer-events:none;z-index:0}
+    .ripple{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(closest-side,rgba(96,165,250,.35),rgba(96,165,250,.15),transparent 70%);filter:blur(0.2px);opacity:.65;transform:translate(-50%,-50%) scale(1);animation:ripple .9s ease-out forwards}
+    @keyframes ripple{0%{opacity:.65;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(var(--scale,18))}}
   </style>
   <script>
+    let debounceTimer; let currentAbort;
     async function preview() {
       const keyInput = document.getElementById('key');
       const key = (keyInput.value || '').trim();
       const img = document.getElementById('img');
       const status = document.getElementById('status');
       const result = document.getElementById('result');
+      const loader = document.getElementById('loader');
+      if (currentAbort) currentAbort.abort();
+      if (debounceTimer) clearTimeout(debounceTimer);
       if (!key) {
         img.removeAttribute('src');
         img.style.display = 'none';
+        loader.style.display = 'none';
         status.textContent = '';
         result.style.display = 'none';
         return;
       }
-      const abs = new URL('/api/image/' + key, window.location.origin).href;
-      try {
-        const r = await fetch(abs, { method: 'HEAD' });
-        if (!r.ok) {
+      debounceTimer = setTimeout(async () => {
+        const abs = new URL('/api/image/' + key, window.location.origin).href;
+        loader.style.display = '';
+        img.style.display = 'none';
+        status.textContent = '';
+        try {
+          currentAbort = new AbortController();
+          const r = await fetch(abs, { method: 'HEAD', signal: currentAbort.signal });
+          if (!r.ok) {
+            loader.style.display = 'none';
+            result.style.display = 'none';
+            status.textContent = r.status === 404 ? '文件名错误' : '预览失败：检查对象键或防盗链设置';
+            return;
+          }
+          result.style.display = '';
+          img.onerror = () => { loader.style.display = 'none'; status.textContent = '预览失败：检查对象键或防盗链设置'; };
+          img.onload = () => { loader.style.display = 'none'; status.textContent = '预览就绪（点击图片复制链接）'; };
+          img.onclick = async () => {
+            try { await navigator.clipboard.writeText(abs); status.textContent = '已复制链接'; } catch { status.textContent = '复制失败：请手动复制'; }
+          };
+          img.src = abs;
+          img.style.display = '';
+        } catch {
+          loader.style.display = 'none';
           result.style.display = 'none';
-          status.textContent = r.status === 404 ? '文件名错误' : '预览失败：检查对象键或防盗链设置';
-          return;
+          status.textContent = '网络错误：请稍后重试';
+        } finally {
+          currentAbort = undefined;
         }
-        result.style.display = '';
-        img.style.display = '';
-        img.onerror = () => { status.textContent = '预览失败：检查对象键或防盗链设置'; };
-        img.onload = () => { status.textContent = '预览就绪（点击图片复制链接）'; };
-        img.onclick = async () => {
-          try { await navigator.clipboard.writeText(abs); status.textContent = '已复制链接'; } catch { status.textContent = '复制失败：请手动复制'; }
-        };
-        img.src = abs;
-      } catch {
-        result.style.display = 'none';
-        status.textContent = '网络错误：请稍后重试';
-      }
+      }, 250);
     }
+  </script>
+  <script>
+    (function(){
+      const layer = document.createElement('div');
+      layer.id = 'ripples';
+      layer.className = 'ripples';
+      document.addEventListener('DOMContentLoaded', () => document.body.prepend(layer));
+      let last = 0;
+      function spawn(x,y,burst){
+        const s = document.createElement('span');
+        s.className = 'ripple';
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        s.style.setProperty('--scale', burst ? 24 : (14 + Math.random()*8).toFixed(1));
+        layer.appendChild(s);
+        s.addEventListener('animationend', () => s.remove());
+      }
+      window.addEventListener('mousemove', (e) => {
+        const now = performance.now();
+        if (now - last < 80) return; // throttle
+        last = now;
+        spawn(e.clientX, e.clientY, false);
+      });
+      window.addEventListener('click', (e) => spawn(e.clientX, e.clientY, true));
+    })();
   </script>
   </head>
 <body>
+  
   <div class="card">
-    <h1>图片中心</h1>
     <div class="row">
       <input id="key" type="text" placeholder="输入文件名" oninput="preview()">
       <span id="status" class="status"></span>
     </div>
     <div id="result" class="result" style="display:none">
       <div class="imgwrap">
+        <div id="loader" class="loader" style="display:none"></div>
         <img id="img" alt="预览" style="display:none">
       </div>
       <div class="hint">点击图片可复制链接</div>
