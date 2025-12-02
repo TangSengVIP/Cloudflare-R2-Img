@@ -20,11 +20,12 @@
   <script>
     function preview() {
       const keyInput = document.getElementById('key');
-      const url = '/api/image/' + (keyInput.value || '').trim();
+      const key = (keyInput.value || '').trim();
+      const abs = new URL('/api/image/' + key, window.location.origin).href;
       const urlInput = document.getElementById('url');
       const img = document.getElementById('img');
-      urlInput.value = url;
-      img.src = url;
+      urlInput.value = abs;
+      img.src = abs;
     }
     async function copyUrl() {
       const v = document.getElementById('url').value;
