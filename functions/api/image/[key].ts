@@ -7,11 +7,14 @@ export const onRequestGet = async ({ env, params, request }) => {
   if (allowed.length) {
     const ref = request.headers.get("referer") || "";
     let pass = false;
+    const reqHost = (() => { try { return new URL(request.url).hostname.toLowerCase(); } catch { return ""; } })();
     if (ref) {
       try {
         const host = new URL(ref).hostname.toLowerCase();
-        pass = allowed.some(a => host === a || (a.startsWith("*.") && host.endsWith(a.slice(2))));
+        pass = host === reqHost || allowed.some(a => host === a || (a.startsWith("*.") && host.endsWith(a.slice(2))));
       } catch {}
+    } else {
+      pass = true;
     }
     if (!pass) {
       return new Response("forbidden", { status: 403 });
